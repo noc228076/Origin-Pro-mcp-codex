@@ -2,7 +2,60 @@
 
 [中文](README.md) | English
 
-OriginPro MCP server for Codex.
+OriginPro MCP server for Codex. It uses stdio transport to automate OriginLab OriginPro.
+
+## Prerequisites
+
+- Windows.
+- OriginLab OriginPro installed and registered as a COM Automation Server.
+- Node.js 20 or later.
+- Codex installed and able to read `~/.codex/config.toml`.
+
+## Deployment
+
+Install the server from GitHub as a global command:
+
+```powershell
+npm install -g github:noc228076/origin-pro-mcp-codex#codex/publish-originpro-mcp
+```
+
+Verify that the command is available:
+
+```powershell
+originpro-mcp
+```
+
+If you are developing from source:
+
+```powershell
+npm install
+npm run build
+npm link
+```
+
+`npm link` registers the current source package as the global `originpro-mcp` command so Codex can start it directly.
+
+## Startup
+
+For normal use, you do not need to start the service manually. Codex starts `originpro-mcp` from the MCP configuration.
+
+To verify that the service can start manually, run:
+
+```powershell
+originpro-mcp
+```
+
+For source debugging, you can also run:
+
+```powershell
+npm start
+```
+
+On Windows, you can also double-click:
+
+```text
+start-originpro-mcp.cmd
+```
 
 ## Codex Configuration
 
@@ -19,7 +72,7 @@ tool_timeout_sec = 120
 ORIGIN_MCP_WORKDIR = "."
 ```
 
-If you are developing from source instead of using the installed command, use:
+If you do not use the global command and want to run from source, use:
 
 ```toml
 [mcp_servers.originpro]
@@ -33,8 +86,16 @@ tool_timeout_sec = 120
 ORIGIN_MCP_WORKDIR = "."
 ```
 
+Restart Codex after changing the configuration.
+
+## Paths
+
+- `ORIGIN_MCP_WORKDIR` is the workspace root for Origin project files, exported figures, and other file tools.
+- All file tools only accept relative paths.
+- Absolute paths and `..` traversal paths are rejected.
+
 ## Notes
 
 - This MCP is for OriginLab OriginPro.
 - It uses stdio transport.
-- All file tools only accept relative paths.
+- Codex manages the MCP server process automatically.
