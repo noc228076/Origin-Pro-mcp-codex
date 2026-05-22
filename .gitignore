@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+exports/
+output/
+projects/
+.claude/
+.mcp.json
+.env
+.DS_Store
+*.log
+npm-debug.log*
+*.csv
+*.metadata.json
