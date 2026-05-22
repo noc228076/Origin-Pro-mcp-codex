@@ -1,6 +1,14 @@
 import fs from "node:fs";
 import path from "node:path";
-import { buildExportGraphScript, buildPlotXYScript, pageTypeCodes } from "./labTalk.js";
+import {
+  buildApplyGraphThemeScript,
+  buildCreateComboChartScript,
+  buildExportGraphScript,
+  buildPlotXYScript,
+  buildSetAxisStyleScript,
+  buildSetPlotStyleScript,
+  pageTypeCodes
+} from "./labTalk.js";
 import {
   getExistingOriginBridge,
   getSharedOriginBridge,
@@ -8,6 +16,8 @@ import {
 } from "./powerShellBridge.js";
 import {
   ExportFormat,
+  AxisName,
+  GraphTheme,
   PageType,
   PlotType,
   RelativeWorkspacePath,
@@ -216,6 +226,102 @@ export class OriginService {
       script,
       ...result
     };
+  }
+
+  async setPlotStyle(options: {
+    graphName?: string;
+    layerIndex?: number;
+    plotIndex: number;
+    color?: string;
+    lineWidth?: number;
+    symbolSize?: number;
+    fillColor?: string;
+  }) {
+    this.assertWindows();
+    const script = buildSetPlotStyleScript(options);
+    const commandResults = await this.executeLabTalkStatements(script);
+
+    return {
+      ok: true,
+      script,
+      commandResults
+    };
+  }
+
+  async setAxisStyle(options: {
+    graphName?: string;
+    axis: AxisName;
+    title?: string;
+    from?: number;
+    to?: number;
+    majorTicks?: number;
+    minorTicks?: number;
+    fontSize?: number;
+  }) {
+    this.assertWindows();
+    const script = buildSetAxisStyleScript(options);
+    const commandResults = await this.executeLabTalkStatements(script);
+
+    return {
+      ok: true,
+      script,
+      commandResults
+    };
+  }
+
+  async applyGraphTheme(graphName: string | undefined, theme: GraphTheme) {
+    this.assertWindows();
+    const script = buildApplyGraphThemeScript(graphName, theme);
+    const commandResults = await this.executeLabTalkStatements(script);
+
+    return {
+      ok: true,
+      script,
+      theme,
+      commandResults
+    };
+  }
+
+  async createComboChart(options: {
+    worksheetRange: string;
+    xColumn: number;
+    columnYColumn: number;
+    lineYColumn: number;
+    graphName?: string;
+    columnColor?: string;
+    lineColor?: string;
+    xTitle?: string;
+    leftYTitle?: string;
+    rightYTitle?: string;
+  }) {
+    this.assertWindows();
+    const script = buildCreateComboChartScript(options);
+    const commandResults = await this.executeLabTalkStatements(script);
+    const plotResults = commandResults.filter(({ statement }) => statement.startsWith("plotxy "));
+
+    return {
+      ok: plotResults.every(({ result }) => result !== false),
+      script,
+      commandResults
+    };
+  }
+
+  private async executeLabTalkStatements(script: string) {
+    const bridge = getSharedOriginBridge();
+    const statements = script
+      .split(";")
+      .map((statement) => statement.trim())
+      .filter((statement) => statement.length > 0);
+
+    const results: Array<{ statement: string; result: unknown }> = [];
+    for (const statement of statements) {
+      const response = await bridge.request<Record<string, unknown>>("execute", {
+        script: `${statement};`
+      });
+      results.push({ statement, result: response.result });
+    }
+
+    return results;
   }
 
   private assertWindows() {

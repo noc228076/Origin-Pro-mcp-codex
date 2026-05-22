@@ -10,6 +10,10 @@ export type PlotType = "line" | "scatter" | "line_symbol" | "column";
 
 export type ExportFormat = "png" | "jpg" | "tif" | "pdf" | "eps" | "bmp" | "emf";
 
+export type AxisName = "x" | "y" | "y2";
+
+export type GraphTheme = "journal" | "nature" | "science" | "cell";
+
 export interface ResolvedWorkspacePath {
   readonly relativePath: RelativeWorkspacePath;
   readonly absolutePath: string;

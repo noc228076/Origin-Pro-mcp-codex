@@ -209,5 +209,95 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
       toolResult(await service.exportGraph(relativePath, format, graphName))
   );
 
+  server.registerTool(
+    "origin_set_plot_style",
+    {
+      title: "Set OriginPro Plot Style",
+      description:
+        "Set a plot color, fill color, line width, or symbol size without requiring raw LabTalk.",
+      inputSchema: toolInputSchemas.origin_set_plot_style
+    },
+    async ({ graphName, layerIndex, plotIndex, color, lineWidth, symbolSize, fillColor }) =>
+      toolResult(
+        await service.setPlotStyle({
+          graphName,
+          layerIndex,
+          plotIndex,
+          color,
+          lineWidth,
+          symbolSize,
+          fillColor
+        })
+      )
+  );
+
+  server.registerTool(
+    "origin_set_axis_style",
+    {
+      title: "Set OriginPro Axis Style",
+      description: "Set common X, Y, or Y2 axis title, range, tick, and title font options.",
+      inputSchema: toolInputSchemas.origin_set_axis_style
+    },
+    async ({ graphName, axis, title, from, to, majorTicks, minorTicks, fontSize }) =>
+      toolResult(
+        await service.setAxisStyle({
+          graphName,
+          axis,
+          title,
+          from,
+          to,
+          majorTicks,
+          minorTicks,
+          fontSize
+        })
+      )
+  );
+
+  server.registerTool(
+    "origin_apply_graph_theme",
+    {
+      title: "Apply OriginPro Graph Theme",
+      description: "Apply a journal-style color and typography theme to the active or named graph.",
+      inputSchema: toolInputSchemas.origin_apply_graph_theme
+    },
+    async ({ graphName, theme }) => toolResult(await service.applyGraphTheme(graphName, theme))
+  );
+
+  server.registerTool(
+    "origin_create_combo_chart",
+    {
+      title: "Create OriginPro Combo Chart",
+      description:
+        "Create a publication-oriented column plus line chart from worksheet columns, then apply safe colors and titles.",
+      inputSchema: toolInputSchemas.origin_create_combo_chart
+    },
+    async ({
+      worksheetRange,
+      xColumn,
+      columnYColumn,
+      lineYColumn,
+      graphName,
+      columnColor,
+      lineColor,
+      xTitle,
+      leftYTitle,
+      rightYTitle
+    }) =>
+      toolResult(
+        await service.createComboChart({
+          worksheetRange,
+          xColumn,
+          columnYColumn,
+          lineYColumn,
+          graphName,
+          columnColor,
+          lineColor,
+          xTitle,
+          leftYTitle,
+          rightYTitle
+        })
+      )
+  );
+
   return server;
 }

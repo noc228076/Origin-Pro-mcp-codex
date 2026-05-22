@@ -99,3 +99,28 @@ Restart Codex after changing the configuration.
 - This MCP is for OriginLab OriginPro.
 - It uses stdio transport.
 - Codex manages the MCP server process automatically.
+
+## MCP Tools
+
+- `origin_status`
+- `origin_connect`
+- `origin_set_visible`
+- `origin_new_project`
+- `origin_load_project`
+- `origin_save_project`
+- `origin_run`
+- `origin_exit`
+- `origin_create_page`
+- `origin_put_worksheet`
+- `origin_get_worksheet`
+- `origin_execute_labtalk`
+- `origin_get_ltvar`
+- `origin_set_ltvar`
+- `origin_get_ltstr`
+- `origin_set_ltstr`
+- `origin_plot_xy`
+- `origin_set_plot_style`
+- `origin_set_axis_style`
+- `origin_apply_graph_theme`
+- `origin_create_combo_chart`
+- `origin_export_graph`
