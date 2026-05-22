@@ -97,6 +97,83 @@ function ConvertFrom-WorksheetJson {
   return $matrix
 }
 
+function ConvertTo-LabTalkStringLiteral {
+  param([AllowNull()] $Value)
+
+  if ($null -eq $Value) {
+    return '""'
+  }
+
+  $text = [string]$Value
+  $text = $text.Replace('\', '\\').Replace('"', '\"')
+  return '"' + $text + '"'
+}
+
+function ConvertTo-LabTalkNumberLiteral {
+  param([Parameter(Mandatory = $true)] $Value)
+
+  return [System.Convert]::ToString($Value, [System.Globalization.CultureInfo]::InvariantCulture)
+}
+
+function Get-WorksheetTargetScript {
+  param([Parameter(Mandatory = $true)] [string] $WorksheetRange)
+
+  $range = $WorksheetRange.Trim()
+  if ($range -match '^\[([^\]]+)\]([^!]*)!?') {
+    $book = $Matches[1]
+    $sheet = $Matches[2]
+    $script = "win -a " + $book + ";"
+    if ($sheet -and $sheet.Length -gt 0) {
+      if ($sheet -match '^\d+$') {
+        $script += "page.active=" + $sheet + ";"
+      } else {
+        $script += "page.active$=" + (ConvertTo-LabTalkStringLiteral $sheet) + ";"
+      }
+    }
+    return $script
+  }
+
+  return ""
+}
+
+function Set-OriginWorksheetCells {
+  param(
+    [Parameter(Mandatory = $true)] $Origin,
+    [Parameter(Mandatory = $true)] [string] $WorksheetRange,
+    [AllowNull()] $Rows,
+    [Parameter(Mandatory = $true)] [int] $RowOffset,
+    [Parameter(Mandatory = $true)] [int] $ColumnOffset
+  )
+
+  if ($null -eq $Rows -or $Rows.Count -eq 0) {
+    return $true
+  }
+
+  $rowCount = $Rows.Count
+  $columnCount = $Rows[0].Count
+  $script = Get-WorksheetTargetScript $WorksheetRange
+  $script += "wks.nCols=max(wks.nCols," + ($ColumnOffset + $columnCount) + ");"
+  $script += "wks.nRows=max(wks.nRows," + ($RowOffset + $rowCount) + ");"
+
+  for ($row = 0; $row -lt $rowCount; $row++) {
+    for ($column = 0; $column -lt $columnCount; $column++) {
+      $targetRow = $RowOffset + $row + 1
+      $targetColumn = $ColumnOffset + $column + 1
+      $value = $Rows[$row][$column]
+
+      if ($null -eq $value -or $value -is [string]) {
+        $script += "wcol(" + $targetColumn + ")[" + $targetRow + "]$=" + (ConvertTo-LabTalkStringLiteral $value) + ";"
+      } elseif ($value -is [bool]) {
+        $script += "wcol(" + $targetColumn + ")[" + $targetRow + "]=" + $(if ($value) { "1" } else { "0" }) + ";"
+      } else {
+        $script += "wcol(" + $targetColumn + ")[" + $targetRow + "]=" + (ConvertTo-LabTalkNumberLiteral $value) + ";"
+      }
+    }
+  }
+
+  return $Origin.Execute($script)
+}
+
 function ConvertTo-WorksheetRows {
   param([AllowNull()] $Value)
 
@@ -217,10 +294,9 @@ function Invoke-OriginMethod {
 
     "putWorksheet" {
       $origin = Get-OriginApp
-      $matrix = ConvertFrom-WorksheetJson $Params.data
       $rowOffset = if ($Params.rowOffset) { [int]$Params.rowOffset } else { 0 }
       $columnOffset = if ($Params.columnOffset) { [int]$Params.columnOffset } else { 0 }
-      $result = $origin.PutWorksheet([string]$Params.worksheetRange, $matrix, $rowOffset, $columnOffset)
+      $result = Set-OriginWorksheetCells -Origin $origin -WorksheetRange ([string]$Params.worksheetRange) -Rows $Params.data -RowOffset $rowOffset -ColumnOffset $columnOffset
       return @{
         ok = [bool]$result
         worksheetRange = $Params.worksheetRange
