@@ -31,7 +31,9 @@ export function buildWorksheetXYRange(
   xColumn: number,
   yColumns: number[]
 ): string {
-  if (worksheetRange.trim().length === 0) {
+  const normalizedRange = worksheetRange.trim().replace(/!+$/, "");
+
+  if (normalizedRange.length === 0) {
     throw new Error("worksheetRange must be a non-empty LabTalk worksheet range.");
   }
 
@@ -40,7 +42,7 @@ export function buildWorksheetXYRange(
     throw new Error("xColumn and yColumns must use 1-based positive column indexes.");
   }
 
-  return `iy:=${worksheetRange}!(${columns.join(",")})`;
+  return `iy:=${normalizedRange}!(${columns.join(",")})`;
 }
 
 export function buildPlotXYScript(

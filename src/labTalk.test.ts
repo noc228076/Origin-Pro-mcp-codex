@@ -8,6 +8,12 @@ describe("LabTalk builders", () => {
     );
   });
 
+  it("normalizes worksheet ranges that already include a trailing bang", () => {
+    expect(buildWorksheetXYRange("[Book1]Sheet1!", 1, [2])).toBe(
+      "iy:=[Book1]Sheet1!(1,2)"
+    );
+  });
+
   it("rejects invalid column indexes", () => {
     expect(() => buildWorksheetXYRange("[Book1]Sheet1", 0, [2])).toThrow(
       "1-based positive column"
