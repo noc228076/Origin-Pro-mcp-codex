@@ -174,30 +174,73 @@ function Set-OriginWorksheetCells {
   return $Origin.Execute($script)
 }
 
-function ConvertTo-WorksheetRows {
-  param([AllowNull()] $Value)
+function Read-OriginWorksheetCells {
+  param(
+    [Parameter(Mandatory = $true)] $Origin,
+    [Parameter(Mandatory = $true)] [string] $WorksheetRange,
+    [Parameter(Mandatory = $true)] [int] $RowOffset,
+    [Parameter(Mandatory = $true)] [int] $ColumnOffset,
+    [AllowNull()] $RowCount,
+    [AllowNull()] $ColumnCount
+  )
 
-  if ($null -eq $Value) {
+  $targetScript = Get-WorksheetTargetScript $WorksheetRange
+  if ($targetScript.Length -gt 0) {
+    $null = $Origin.Execute($targetScript)
+  }
+
+  $actualRows = [int](Get-ComIndexedProperty -Target $Origin -Name "LTVar" -Arguments @("wks.nRows"))
+  $actualColumns = [int](Get-ComIndexedProperty -Target $Origin -Name "LTVar" -Arguments @("wks.nCols"))
+
+  $requestedRows = if ($null -ne $RowCount) { [int]$RowCount } else { [Math]::Max(0, $actualRows - $RowOffset) }
+  $requestedColumns = if ($null -ne $ColumnCount) { [int]$ColumnCount } else { [Math]::Max(0, $actualColumns - $ColumnOffset) }
+  $readRows = [Math]::Min($requestedRows, 1000)
+  $readColumns = [Math]::Min($requestedColumns, 100)
+
+  if ($readRows -le 0 -or $readColumns -le 0) {
     return @()
   }
 
-  if ($Value -is [System.Array] -and $Value.Rank -eq 2) {
-    $rows = @()
-    for ($row = 0; $row -lt $Value.GetLength(0); $row++) {
-      $items = @()
-      for ($column = 0; $column -lt $Value.GetLength(1); $column++) {
-        $items += $Value.GetValue($row, $column)
+  $rows = @()
+  for ($row = 0; $row -lt $readRows; $row++) {
+    $items = @()
+    $targetRow = $RowOffset + $row + 1
+    for ($column = 0; $column -lt $readColumns; $column++) {
+      $targetColumn = $ColumnOffset + $column + 1
+      $textName = "__mcp_cell_text"
+      $numberName = "__mcp_cell_number"
+      $null = $Origin.Execute($textName + "$=wcol(" + $targetColumn + ")[" + $targetRow + "]$;")
+      $textValue = Get-ComIndexedProperty -Target $Origin -Name "LTStr" -Arguments @($textName)
+
+      if ($textValue -and ([string]$textValue).Length -gt 0) {
+        $text = [string]$textValue
+        $parsedNumber = 0.0
+        if ([double]::TryParse($text, [System.Globalization.NumberStyles]::Float, [System.Globalization.CultureInfo]::InvariantCulture, [ref]$parsedNumber)) {
+          $items += $parsedNumber
+        } else {
+          $items += $text
+        }
+      } else {
+        $null = $Origin.Execute($numberName + "=wcol(" + $targetColumn + ")[" + $targetRow + "];")
+        $numberValue = Get-ComIndexedProperty -Target $Origin -Name "LTVar" -Arguments @($numberName)
+        if ($numberValue -eq -1.23456789E-300) {
+          $items += $null
+        } else {
+          $items += $numberValue
+        }
       }
-      $rows += ,$items
     }
-    return $rows
+    $rows += ,$items
   }
 
-  if ($Value -is [System.Array]) {
-    return @($Value)
+  return @{
+    data = $rows
+    rowCount = $readRows
+    columnCount = $readColumns
+    actualRowCount = $actualRows
+    actualColumnCount = $actualColumns
+    truncated = (($requestedRows -gt $readRows) -or ($requestedColumns -gt $readColumns))
   }
-
-  return @(@($Value))
 }
 
 function Invoke-OriginMethod {
@@ -307,10 +350,21 @@ function Invoke-OriginMethod {
 
     "getWorksheet" {
       $origin = Get-OriginApp
-      $value = $origin.GetWorksheet([string]$Params.worksheetRange)
+      $rowOffset = if ($Params.rowOffset) { [int]$Params.rowOffset } else { 0 }
+      $columnOffset = if ($Params.columnOffset) { [int]$Params.columnOffset } else { 0 }
+      $rowCount = if ($null -ne $Params.rowCount) { [int]$Params.rowCount } else { $null }
+      $columnCount = if ($null -ne $Params.columnCount) { [int]$Params.columnCount } else { $null }
+      $readResult = Read-OriginWorksheetCells -Origin $origin -WorksheetRange ([string]$Params.worksheetRange) -RowOffset $rowOffset -ColumnOffset $columnOffset -RowCount $rowCount -ColumnCount $columnCount
       return @{
         worksheetRange = $Params.worksheetRange
-        data = ConvertTo-WorksheetRows $value
+        rowOffset = $rowOffset
+        columnOffset = $columnOffset
+        data = $readResult.data
+        rowCount = $readResult.rowCount
+        columnCount = $readResult.columnCount
+        actualRowCount = $readResult.actualRowCount
+        actualColumnCount = $readResult.actualColumnCount
+        truncated = $readResult.truncated
       }
     }
 

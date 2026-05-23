@@ -132,7 +132,10 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
       description: "Read worksheet data from an OriginPro worksheet range.",
       inputSchema: toolInputSchemas.origin_get_worksheet
     },
-    async ({ worksheetRange }) => toolResult(await service.getWorksheet(worksheetRange))
+    async ({ worksheetRange, rowOffset, columnOffset, rowCount, columnCount }) =>
+      toolResult(
+        await service.getWorksheet(worksheetRange, rowOffset, columnOffset, rowCount, columnCount)
+      )
   );
 
   server.registerTool(
@@ -207,6 +210,42 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
     },
     async ({ relativePath, format, graphName }) =>
       toolResult(await service.exportGraph(relativePath, format, graphName))
+  );
+
+  server.registerTool(
+    "origin_create_publication_figure",
+    {
+      title: "Create OriginPro Publication Figure",
+      description:
+        "Create a publication-oriented column plus line chart from worksheet data, apply theme and titles, and export it.",
+      inputSchema: toolInputSchemas.origin_create_publication_figure
+    },
+    async ({
+      data,
+      worksheetName,
+      graphName,
+      xColumn,
+      columnYColumn,
+      lineYColumn,
+      theme,
+      titles,
+      exportPath,
+      exportFormat
+    }) =>
+      toolResult(
+        await service.createPublicationFigure({
+          data,
+          worksheetName,
+          graphName,
+          xColumn,
+          columnYColumn,
+          lineYColumn,
+          theme,
+          titles,
+          exportPath: exportPath ?? "exports/publication_figure.png",
+          exportFormat
+        })
+      )
   );
 
   server.registerTool(

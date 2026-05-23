@@ -123,4 +123,14 @@ ORIGIN_MCP_WORKDIR = "."
 - `origin_set_axis_style`
 - `origin_apply_graph_theme`
 - `origin_create_combo_chart`
+- `origin_create_publication_figure`
 - `origin_export_graph`
+
+## 推荐调用流程
+
+1. `origin_connect`
+2. `origin_create_publication_figure`
+3. `origin_export_graph`
+4. `origin_save_project`
+
+建议让 agent 优先调用这些高级工具，不要直接裸写 LabTalk，除非现有工具确实覆盖不到。

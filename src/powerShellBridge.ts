@@ -1,4 +1,7 @@
 import { spawn, ChildProcessWithoutNullStreams } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import readline from "node:readline";
 import { once } from "node:events";
 import { originPowerShellBridgeScript } from "./powershellBridgeScript.js";
@@ -18,6 +21,7 @@ interface BridgeResponse {
 
 export class PowerShellOriginBridge implements OriginBridge {
   private process?: ChildProcessWithoutNullStreams;
+  private scriptPath?: string;
   private nextId = 1;
   private readonly pending = new Map<number, PendingRequest>();
 
@@ -61,6 +65,11 @@ export class PowerShellOriginBridge implements OriginBridge {
       child.kill();
       await Promise.race([once(child, "exit"), new Promise((resolve) => setTimeout(resolve, 500))]);
     }
+
+    if (this.scriptPath) {
+      fs.rmSync(this.scriptPath, { force: true });
+      this.scriptPath = undefined;
+    }
   }
 
   private ensureProcess(): ChildProcessWithoutNullStreams {
@@ -69,7 +78,11 @@ export class PowerShellOriginBridge implements OriginBridge {
     }
 
     const executable = process.platform === "win32" ? "powershell.exe" : "pwsh";
-    const encodedCommand = Buffer.from(originPowerShellBridgeScript, "utf16le").toString("base64");
+    this.scriptPath = path.join(
+      os.tmpdir(),
+      `originpro-mcp-bridge-${process.pid}-${Date.now()}.ps1`
+    );
+    fs.writeFileSync(this.scriptPath, originPowerShellBridgeScript, "utf8");
     const child = spawn(
       executable,
       [
@@ -78,8 +91,8 @@ export class PowerShellOriginBridge implements OriginBridge {
         "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-EncodedCommand",
-        encodedCommand
+        "-File",
+        this.scriptPath
       ],
       {
         stdio: ["pipe", "pipe", "pipe"],
@@ -105,6 +118,10 @@ export class PowerShellOriginBridge implements OriginBridge {
         pending.reject(error);
       }
       this.pending.clear();
+      if (this.scriptPath) {
+        fs.rmSync(this.scriptPath, { force: true });
+        this.scriptPath = undefined;
+      }
       reader.close();
     });
 

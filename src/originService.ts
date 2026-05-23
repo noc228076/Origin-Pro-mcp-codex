@@ -155,10 +155,20 @@ export class OriginService {
     });
   }
 
-  async getWorksheet(worksheetRange: string) {
+  async getWorksheet(
+    worksheetRange: string,
+    rowOffset = 0,
+    columnOffset = 0,
+    rowCount?: number,
+    columnCount?: number
+  ) {
     this.assertWindows();
     return getSharedOriginBridge().request<Record<string, unknown>>("getWorksheet", {
-      worksheetRange
+      worksheetRange,
+      rowOffset,
+      columnOffset,
+      rowCount,
+      columnCount
     });
   }
 
@@ -219,8 +229,14 @@ export class OriginService {
     const result = await getSharedOriginBridge().request<Record<string, unknown>>("execute", {
       script
     });
+    const exists = fs.existsSync(resolved.absolutePath);
+    const sizeBytes = exists ? fs.statSync(resolved.absolutePath).size : 0;
+    const ok = exists && sizeBytes > 0;
 
     return {
+      ok,
+      exists,
+      sizeBytes,
       relativePath: resolved.relativePath,
       format,
       script,
@@ -298,11 +314,64 @@ export class OriginService {
     const script = buildCreateComboChartScript(options);
     const commandResults = await this.executeLabTalkStatements(script);
     const plotResults = commandResults.filter(({ statement }) => statement.startsWith("plotxy "));
+    const plotOk = plotResults.length > 0 && plotResults.every(({ result }) => result !== false);
+    const styleApplied = commandResults.some(({ statement }) => statement.startsWith("set "));
 
     return {
-      ok: plotResults.every(({ result }) => result !== false),
+      ok: plotOk,
+      plotOk,
+      styleApplied,
       script,
       commandResults
+    };
+  }
+
+  async createPublicationFigure(options: {
+    data: WorksheetData;
+    worksheetName?: string;
+    graphName?: string;
+    xColumn: number;
+    columnYColumn: number;
+    lineYColumn: number;
+    theme: GraphTheme;
+    titles: {
+      x?: string;
+      leftY?: string;
+      rightY?: string;
+    };
+    exportPath?: RelativeWorkspacePath;
+    exportFormat: ExportFormat;
+  }) {
+    this.assertWindows();
+    const worksheetName = options.worksheetName ?? "publication_data";
+    const graphName = options.graphName ?? "publication_figure";
+    const page = await this.createPage("worksheet", worksheetName, "Origin");
+    const worksheetRange = `[${page.result}]1!`;
+    const write = await this.putWorksheet(worksheetRange, options.data);
+    const combo = await this.createComboChart({
+      worksheetRange,
+      xColumn: options.xColumn,
+      columnYColumn: options.columnYColumn,
+      lineYColumn: options.lineYColumn,
+      graphName,
+      xTitle: options.titles.x,
+      leftYTitle: options.titles.leftY,
+      rightYTitle: options.titles.rightY
+    });
+    const theme = await this.applyGraphTheme(graphName, options.theme);
+    const exportResult = options.exportPath
+      ? await this.exportGraph(options.exportPath, options.exportFormat, graphName)
+      : undefined;
+
+    return {
+      ok: Boolean(combo.ok) && (!exportResult || Boolean(exportResult.ok)),
+      worksheetName,
+      worksheetRange,
+      graphName,
+      write,
+      combo,
+      theme,
+      export: exportResult
     };
   }
 

@@ -44,7 +44,11 @@ export const toolInputSchemas = {
     columnOffset: z.number().int().min(0).default(0)
   }),
   origin_get_worksheet: z.object({
-    worksheetRange: z.string().trim().min(1)
+    worksheetRange: z.string().trim().min(1),
+    rowOffset: z.number().int().min(0).default(0),
+    columnOffset: z.number().int().min(0).default(0),
+    rowCount: z.number().int().positive().optional(),
+    columnCount: z.number().int().positive().optional()
   }),
   origin_execute_labtalk: z.object({
     script: z.string().trim().min(1),
@@ -111,5 +115,21 @@ export const toolInputSchemas = {
     relativePath: relativePathSchema,
     format: exportFormatSchema,
     graphName: z.string().trim().min(1).optional()
+  }),
+  origin_create_publication_figure: z.object({
+    data: worksheetDataSchema,
+    worksheetName: z.string().trim().min(1).optional(),
+    graphName: z.string().trim().min(1).optional(),
+    xColumn: z.number().int().min(1),
+    columnYColumn: z.number().int().min(1),
+    lineYColumn: z.number().int().min(1),
+    theme: graphThemeSchema.default("nature"),
+    titles: z.object({
+      x: z.string().trim().min(1).optional(),
+      leftY: z.string().trim().min(1).optional(),
+      rightY: z.string().trim().min(1).optional()
+    }).default({}),
+    exportPath: relativePathSchema.optional(),
+    exportFormat: exportFormatSchema.default("png")
   })
 };

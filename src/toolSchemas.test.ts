@@ -44,9 +44,44 @@ describe("tool input schemas", () => {
     ).toThrow();
   });
 
+  it("accepts bounded worksheet reads", () => {
+    expect(
+      toolInputSchemas.origin_get_worksheet.parse({
+        worksheetRange: "[Book1]Sheet1!",
+        rowOffset: 1,
+        columnOffset: 2,
+        rowCount: 10,
+        columnCount: 3
+      })
+    ).toEqual({
+      worksheetRange: "[Book1]Sheet1!",
+      rowOffset: 1,
+      columnOffset: 2,
+      rowCount: 10,
+      columnCount: 3
+    });
+  });
+
   it("accepts all visible states", () => {
     for (const state of ["show", "hide", "front", "maximize", "minimize"]) {
       expect(toolInputSchemas.origin_set_visible.parse({ state })).toEqual({ state });
     }
+  });
+
+  it("accepts publication figure inputs", () => {
+    expect(
+      toolInputSchemas.origin_create_publication_figure.parse({
+        data: [
+          [1, 2, 3],
+          [4, 5, 6]
+        ],
+        xColumn: 1,
+        columnYColumn: 2,
+        lineYColumn: 3
+      })
+    ).toMatchObject({
+      theme: "nature",
+      exportFormat: "png"
+    });
   });
 });

@@ -123,4 +123,14 @@ Restart Codex after changing the configuration.
 - `origin_set_axis_style`
 - `origin_apply_graph_theme`
 - `origin_create_combo_chart`
+- `origin_create_publication_figure`
 - `origin_export_graph`
+
+## Recommended Flow
+
+1. `origin_connect`
+2. `origin_create_publication_figure`
+3. `origin_export_graph`
+4. `origin_save_project`
+
+Prefer these higher-level tools over raw LabTalk unless a case is not covered yet.
