@@ -59,17 +59,17 @@ start-originpro-mcp.cmd
 
 ## Codex Configuration
 
-Use the JSON below in Codex MCP configuration. This example uses a local source path, so update `args` and `ORIGIN_MCP_WORKDIR` if the project is moved.
+Use the JSON below in Codex MCP configuration. This example assumes the repository is located at `D:\Documents\origin-pro-mcp-codex`; replace that path with your actual repository directory if needed.
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\New project\\dist\\index.js"
+    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
   }
 }
 ```
@@ -78,17 +78,17 @@ Restart Codex after changing the configuration.
 
 ## CCSwitch Configuration
 
-If you run the server directly from this source directory, use the JSON below in CCSwitch. This example uses a local machine path, so update `args` and `ORIGIN_MCP_WORKDIR` if the project is moved.
+If you run the server directly from this source directory, use the JSON below in CCSwitch. This example assumes the repository is located at `D:\Documents\origin-pro-mcp-codex`; replace that path with your actual repository directory if needed.
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\New project\\dist\\index.js"
+    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
   }
 }
 ```

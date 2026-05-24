@@ -59,17 +59,17 @@ start-originpro-mcp.cmd
 
 ## Codex 配置
 
-在 Codex 的 MCP 配置中使用下面的 JSON。本示例使用本机源码路径，换机器或换目录时需要同步修改 `args` 和 `ORIGIN_MCP_WORKDIR`。
+在 Codex 的 MCP 配置中使用下面的 JSON。本示例假设仓库位于 `D:\Documents\origin-pro-mcp-codex`；如果你的仓库在其他位置，请把该路径替换成你的实际仓库目录。
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\New project\\dist\\index.js"
+    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
   }
 }
 ```
@@ -78,17 +78,17 @@ start-originpro-mcp.cmd
 
 ## CCSwitch 配置
 
-如果你直接从当前源码目录运行，可以在 CCSwitch 中使用下面的 JSON。本示例使用本机路径，换机器或换目录时需要同步修改 `args` 和 `ORIGIN_MCP_WORKDIR`。
+如果你直接从当前源码目录运行，可以在 CCSwitch 中使用下面的 JSON。本示例假设仓库位于 `D:\Documents\origin-pro-mcp-codex`；如果你的仓库在其他位置，请把该路径替换成你的实际仓库目录。
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\New project\\dist\\index.js"
+    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
   }
 }
 ```
