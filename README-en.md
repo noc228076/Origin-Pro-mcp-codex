@@ -88,6 +88,23 @@ ORIGIN_MCP_WORKDIR = "."
 
 Restart Codex after changing the configuration.
 
+## CCSwitch Configuration
+
+If you run the server directly from this source directory, use the JSON below in CCSwitch. This example uses a local machine path, so update `args` and `ORIGIN_MCP_WORKDIR` if the project is moved.
+
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": [
+    "D:\\Documents\\New project\\dist\\index.js"
+  ],
+  "env": {
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+  }
+}
+```
+
 ## Paths
 
 - `ORIGIN_MCP_WORKDIR` is the workspace root for Origin project files, exported figures, and other file tools.

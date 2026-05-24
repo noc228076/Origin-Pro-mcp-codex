@@ -88,6 +88,23 @@ ORIGIN_MCP_WORKDIR = "."
 
 修改配置后重启 Codex。
 
+## CCSwitch 配置
+
+如果你直接从当前源码目录运行，可以在 CCSwitch 中使用下面的 JSON。本示例使用本机路径，换机器或换目录时需要同步修改 `args` 和 `ORIGIN_MCP_WORKDIR`。
+
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": [
+    "D:\\Documents\\New project\\dist\\index.js"
+  ],
+  "env": {
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+  }
+}
+```
+
 ## 路径说明
 
 - `ORIGIN_MCP_WORKDIR` 是 Origin 项目文件、导出图片等文件工具的工作目录。
