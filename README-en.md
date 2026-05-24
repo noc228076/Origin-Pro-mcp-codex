@@ -9,7 +9,7 @@ OriginPro MCP server for Codex. It uses stdio transport to automate OriginLab Or
 - Windows.
 - OriginLab OriginPro installed and registered as a COM Automation Server.
 - Node.js 20 or later.
-- Codex installed and able to read `~/.codex/config.toml`.
+- Codex installed and able to configure MCP servers.
 
 ## Deployment
 
@@ -59,31 +59,19 @@ start-originpro-mcp.cmd
 
 ## Codex Configuration
 
-Add this to `~/.codex/config.toml` or `.codex/config.toml` in your workspace:
+Use the JSON below in Codex MCP configuration. This example uses a local source path, so update `args` and `ORIGIN_MCP_WORKDIR` if the project is moved.
 
-```toml
-[mcp_servers.originpro]
-command = "originpro-mcp"
-args = []
-startup_timeout_sec = 30
-tool_timeout_sec = 120
-
-[mcp_servers.originpro.env]
-ORIGIN_MCP_WORKDIR = "."
-```
-
-If you do not use the global command and want to run from source, use:
-
-```toml
-[mcp_servers.originpro]
-command = "node"
-args = ["dist/index.js"]
-cwd = "<PATH_TO_THIS_REPO>"
-startup_timeout_sec = 30
-tool_timeout_sec = 120
-
-[mcp_servers.originpro.env]
-ORIGIN_MCP_WORKDIR = "."
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": [
+    "D:\\Documents\\New project\\dist\\index.js"
+  ],
+  "env": {
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+  }
+}
 ```
 
 Restart Codex after changing the configuration.

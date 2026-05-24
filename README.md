@@ -9,7 +9,7 @@
 - Windows。
 - 已安装并注册 OriginLab OriginPro COM Automation Server。
 - Node.js 20 或更高版本。
-- Codex 已安装并可读取 `~/.codex/config.toml`。
+- Codex 已安装并可配置 MCP 服务。
 
 ## 部署
 
@@ -59,31 +59,19 @@ start-originpro-mcp.cmd
 
 ## Codex 配置
 
-把下面配置加入 `~/.codex/config.toml`，或加入某个工作区内的 `.codex/config.toml`：
+在 Codex 的 MCP 配置中使用下面的 JSON。本示例使用本机源码路径，换机器或换目录时需要同步修改 `args` 和 `ORIGIN_MCP_WORKDIR`。
 
-```toml
-[mcp_servers.originpro]
-command = "originpro-mcp"
-args = []
-startup_timeout_sec = 30
-tool_timeout_sec = 120
-
-[mcp_servers.originpro.env]
-ORIGIN_MCP_WORKDIR = "."
-```
-
-如果你不使用全局命令，而是直接从源码目录运行，可以使用：
-
-```toml
-[mcp_servers.originpro]
-command = "node"
-args = ["dist/index.js"]
-cwd = "<PATH_TO_THIS_REPO>"
-startup_timeout_sec = 30
-tool_timeout_sec = 120
-
-[mcp_servers.originpro.env]
-ORIGIN_MCP_WORKDIR = "."
+```json
+{
+  "type": "stdio",
+  "command": "node",
+  "args": [
+    "D:\\Documents\\New project\\dist\\index.js"
+  ],
+  "env": {
+    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\New project"
+  }
+}
 ```
 
 修改配置后重启 Codex。
