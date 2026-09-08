@@ -8,7 +8,7 @@ An OriginPro MCP server for AI coding assistants (Antigravity, Codex, Claude Des
 
 - **Native COM SafeArray Fast-Path**: `origin_put_worksheet` and `origin_get_worksheet` leverage 2D COM SafeArray transfers, achieving over 50x higher throughput (injecting tens of thousands of data points in seconds).
 - **Non-Interactive Batch Mode**: Automatically injects `@N=1; @V=1; doc -s;` to suppress modal prompts, dialog popups, and UI screen redraws during execution.
-- **Full Path Support**: Supports both Windows absolute paths (e.g. `D:\Desktop\project.opju`) and workspace-relative paths, including cross-drive access.
+- **Full Path Support**: Supports both Windows absolute paths (e.g. `C:\Projects\demo.opju`) and workspace-relative paths, including cross-drive access.
 - **Path Escaping Safety**: Built-in LabTalk path backslash escaping prevents Windows paths from failing due to `\t` (tab) or `\n` (newline) interpretation.
 - **PowerShell 7 Auto-Detection**: Prioritizes PowerShell 7 (`pwsh`), gracefully falls back to system `powershell.exe`, and features built-in execution timeout guards.
 - **One-Click Journal Themes & Combo Charts**: Includes presets for `nature`, `science`, `cell`, and `journal` color palettes and dual-Y column+line plot generators.
@@ -55,10 +55,10 @@ Add to `mcpServers` in `C:\Users\<YourUser>\.gemini\config\mcp_config.json`:
     "originpro": {
       "command": "node",
       "args": [
-        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+        "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
       ],
       "env": {
-        "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+        "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
       }
     }
   }
@@ -72,10 +72,10 @@ Add to `mcpServers` in `C:\Users\<YourUser>\.gemini\config\mcp_config.json`:
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+    "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
   }
 }
 ```
@@ -90,7 +90,7 @@ Configure in `%APPDATA%\Claude\claude_desktop_config.json`:
     "originpro": {
       "command": "node",
       "args": [
-        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+        "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
       ]
     }
   }
@@ -104,10 +104,10 @@ Configure in `%APPDATA%\Claude\claude_desktop_config.json`:
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+    "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
   }
 }
 ```
@@ -127,7 +127,7 @@ Configure in `%APPDATA%\Claude\claude_desktop_config.json`:
 | Tool | Parameters | Description |
 | :--- | :--- | :--- |
 | `origin_new_project` | None | Create a clean Origin project in active session |
-| `origin_load_project` | `relativePath` | Open an existing `.opju` file (accepts relative or absolute path, e.g. `D:\Desktop\demo.opju`) |
+| `origin_load_project` | `relativePath` | Open an existing `.opju` file (accepts relative or absolute path, e.g. `C:\Projects\demo.opju`) |
 | `origin_save_project` | `relativePath` | Save project to destination path (auto-creates directories) |
 
 ### 3. Worksheets & Data Transfer

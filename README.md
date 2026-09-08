@@ -8,7 +8,7 @@
 
 - **Native COM 矩阵高速通道**：`origin_put_worksheet` 与 `origin_get_worksheet` 底层采用二维 COM SafeArray 数组传输，数据吞吐速度提升 50 倍以上（万级数据秒级注入）。
 - **非交互防弹批处理**：自动注入 `@N=1; @V=1; doc -s;`，彻底禁用 Origin 模态弹窗拦截与绘图重绘 UI 刷新，杜绝自动化过程卡死。
-- **全路径支持**：全面支持 Windows 绝对路径（如 `D:\Desktop\project.opju`）与工作区相对路径，支持跨盘符操作。
+- **全路径支持**：全面支持 Windows 绝对路径（如 `C:\Projects\demo.opju`）与工作区相对路径，支持跨盘符操作。
 - **路径安全转义**：内置 LabTalk 路径反斜杠转义保护，解决 Windows 路径因 `\t`、`\n` 导致导出失败的顽疾。
 - **PowerShell 7 自动发现**：自动优选 `pwsh`（PowerShell 7+）运行环境，无缝回退至系统自带的 `powershell.exe`，并配备超时安全熔断机制。
 - **顶刊配色与样式一键套用**：内置 `nature`、`science`、`cell`、`journal` 经典配色主题与双 Y 轴组合图快速生成器。
@@ -55,10 +55,10 @@ npm link
     "originpro": {
       "command": "node",
       "args": [
-        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+        "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
       ],
       "env": {
-        "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+        "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
       }
     }
   }
@@ -74,10 +74,10 @@ npm link
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+    "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
   }
 }
 ```
@@ -92,7 +92,7 @@ npm link
     "originpro": {
       "command": "node",
       "args": [
-        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+        "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
       ]
     }
   }
@@ -106,10 +106,10 @@ npm link
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+    "C:\\path\\to\\Origin-Pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "C:\\path\\to\\your\\workspace"
   }
 }
 ```
@@ -129,7 +129,7 @@ npm link
 | 工具名称 | 参数 | 描述 |
 | :--- | :--- | :--- |
 | `origin_new_project` | 无 | 在当前会话中新建空白 Origin 工程 |
-| `origin_load_project` | `relativePath` | 打开已有工程（支持相对路径或完整绝对路径，如 `D:\Desktop\demo.opju`） |
+| `origin_load_project` | `relativePath` | 打开已有工程（支持相对路径或完整绝对路径，如 `C:\Projects\demo.opju`） |
 | `origin_save_project` | `relativePath` | 保存当前工程至指定路径（自动递归创建父目录） |
 
 ### 3. 工作表与数据操作
