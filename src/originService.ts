@@ -90,16 +90,16 @@ export class OriginService {
 
   async loadProject(relativePath: RelativeWorkspacePath) {
     this.assertWindows();
-    const resolved = resolveWorkspacePath(relativePath);
+    const resolved = resolveWorkspacePath(relativePath, undefined, { allowAbsolute: true });
     if (!fs.existsSync(resolved.absolutePath)) {
-      throw new Error(`Project file does not exist in the workspace: ${resolved.relativePath}`);
+      throw new Error(`Project file does not exist: ${resolved.absolutePath}`);
     }
     return getSharedOriginBridge().request<Record<string, unknown>>("loadProject", { ...resolved });
   }
 
   async saveProject(relativePath: RelativeWorkspacePath) {
     this.assertWindows();
-    const resolved = resolveWorkspacePath(relativePath);
+    const resolved = resolveWorkspacePath(relativePath, undefined, { allowAbsolute: true });
     fs.mkdirSync(path.dirname(resolved.absolutePath), { recursive: true });
     return getSharedOriginBridge().request<Record<string, unknown>>("saveProject", { ...resolved });
   }
@@ -222,7 +222,7 @@ export class OriginService {
 
   async exportGraph(relativePath: RelativeWorkspacePath, format: ExportFormat, graphName?: string) {
     this.assertWindows();
-    const resolved = resolveWorkspacePath(relativePath);
+    const resolved = resolveWorkspacePath(relativePath, undefined, { allowAbsolute: true });
     fs.mkdirSync(path.dirname(resolved.absolutePath), { recursive: true });
 
     const script = buildExportGraphScript(resolved.absolutePath, format, graphName);
@@ -266,6 +266,7 @@ export class OriginService {
 
   async setAxisStyle(options: {
     graphName?: string;
+    layerIndex?: number;
     axis: AxisName;
     title?: string;
     from?: number;
@@ -377,20 +378,37 @@ export class OriginService {
 
   private async executeLabTalkStatements(script: string) {
     const bridge = getSharedOriginBridge();
-    const statements = script
-      .split(";")
-      .map((statement) => statement.trim())
-      .filter((statement) => statement.length > 0);
+    const statements = splitLabTalkScript(script);
 
-    const results: Array<{ statement: string; result: unknown }> = [];
-    for (const statement of statements) {
-      const response = await bridge.request<Record<string, unknown>>("execute", {
-        script: `${statement};`
-      });
-      results.push({ statement, result: response.result });
+    if (statements.length === 0) {
+      return [];
     }
 
-    return results;
+    try {
+      const response = await bridge.request<{
+        ok?: boolean;
+        results?: Array<{ statement: string; result: unknown }>;
+        result?: unknown;
+      }>("executeBatch", { statements });
+
+      if (Array.isArray(response?.results)) {
+        return response.results;
+      }
+      return statements.map((statement) => ({
+        statement,
+        result: response?.result ?? true
+      }));
+    } catch {
+      // Fallback: sequential execution if executeBatch is unsupported
+      const results: Array<{ statement: string; result: unknown }> = [];
+      for (const statement of statements) {
+        const response = await bridge.request<Record<string, unknown>>("execute", {
+          script: `${statement};`
+        });
+        results.push({ statement, result: response.result });
+      }
+      return results;
+    }
   }
 
   private assertWindows() {
@@ -406,6 +424,41 @@ export class OriginService {
       absolutePathHidden: true
     };
   }
+}
+
+export function splitLabTalkScript(script: string): string[] {
+  const statements: string[] = [];
+  let current = "";
+  let inQuote = false;
+  let quoteChar = "";
+
+  for (let i = 0; i < script.length; i++) {
+    const ch = script[i];
+    if ((ch === '"' || ch === "'") && (i === 0 || script[i - 1] !== "\\")) {
+      if (!inQuote) {
+        inQuote = true;
+        quoteChar = ch;
+      } else if (ch === quoteChar) {
+        inQuote = false;
+      }
+      current += ch;
+    } else if (ch === ";" && !inQuote) {
+      const trimmed = current.trim();
+      if (trimmed.length > 0) {
+        statements.push(trimmed);
+      }
+      current = "";
+    } else {
+      current += ch;
+    }
+  }
+
+  const remainder = current.trim();
+  if (remainder.length > 0) {
+    statements.push(remainder);
+  }
+
+  return statements;
 }
 
 export type { VisibleState };

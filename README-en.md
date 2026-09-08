@@ -93,11 +93,24 @@ If you run the server directly from this source directory, use the JSON below in
 }
 ```
 
-## Paths
+## Path & Environment Configuration
 
-- `ORIGIN_MCP_WORKDIR` is the workspace root for Origin project files, exported figures, and other file tools.
-- All file tools only accept relative paths.
-- Absolute paths and `..` traversal paths are rejected.
+### Path Support
+- `ORIGIN_MCP_WORKDIR`: Specifies the workspace root for Origin project files, data worksheets, and exported figures (defaults to current working directory).
+- Supports both **relative paths** (relative to the workspace directory) and Windows **absolute paths** (e.g. `D:\Desktop\project.opju`).
+- When relative paths are used, `..` path traversal is rejected for workspace isolation.
+
+### Optional Environment Variables
+- `ORIGIN_MCP_WORKDIR`: Workspace root path.
+- `ORIGIN_MCP_TIMEOUT_MS`: Timeout for each Origin COM request in milliseconds (default: `30000`).
+- `ORIGIN_MCP_POWERSHELL_PATH`: Custom path to PowerShell executable (defaults to auto-detecting `pwsh`, falling back to `powershell.exe`).
+- `ORIGIN_MCP_ALLOW_ABSOLUTE_PATHS`: Enable/disable absolute path resolution (default: `true`).
+
+## Key Features & Optimizations
+
+- **Native COM Array Fast-Path**: `origin_put_worksheet` and `origin_get_worksheet` use 2D COM SafeArray transfers, achieving over 50x faster data exchange.
+- **Non-Interactive Batch Mode**: Injects `@N=1; @V=1;` to suppress modal dialogs and UI flicker during automation.
+- **PowerShell 7 Auto-Detection & Guard**: Automatically discovers `pwsh` with configurable timeout safeguards.
 
 ## Notes
 

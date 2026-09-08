@@ -30,6 +30,9 @@ function Write-BridgeResponse {
 function Get-OriginApp {
   if ($null -eq $script:origin) {
     $script:origin = New-Object -ComObject Origin.ApplicationSI
+    try {
+      $null = $script:origin.Execute("@N=1; @V=1; doc -s;")
+    } catch {}
   }
   return $script:origin
 }
@@ -73,17 +76,20 @@ function ConvertFrom-WorksheetJson {
     return @()
   }
 
+  $Rows = @($Rows)
   $rowCount = $Rows.Count
   if ($rowCount -eq 0) {
     return @()
   }
 
-  $columnCount = $Rows[0].Count
+  $firstRow = @($Rows[0])
+  $columnCount = $firstRow.Count
   $matrix = New-Object "object[,]" $rowCount, $columnCount
 
   for ($row = 0; $row -lt $rowCount; $row++) {
+    $currentRow = @($Rows[$row])
     for ($column = 0; $column -lt $columnCount; $column++) {
-      $value = $Rows[$row][$column]
+      $value = $currentRow[$column]
       if ($null -eq $value) {
         $matrix[$row, $column] = ""
       } elseif ($value -is [bool]) {
@@ -149,9 +155,17 @@ function Set-OriginWorksheetCells {
     return $true
   }
 
+  try {
+    $matrix = ConvertFrom-WorksheetJson $Rows
+    $success = $Origin.PutWorksheet($WorksheetRange, $matrix, $RowOffset, $ColumnOffset)
+    if ($success) {
+      return $true
+    }
+  } catch {}
+
   $rowCount = $Rows.Count
   $columnCount = $Rows[0].Count
-  $script = Get-WorksheetTargetScript $WorksheetRange
+  $script = "@N=1; @V=1; " + (Get-WorksheetTargetScript $WorksheetRange)
   $script += "wks.nCols=max(wks.nCols," + ($ColumnOffset + $columnCount) + ");"
   $script += "wks.nRows=max(wks.nRows," + ($RowOffset + $rowCount) + ");"
 
@@ -198,9 +212,62 @@ function Read-OriginWorksheetCells {
   $readColumns = [Math]::Min($requestedColumns, 100)
 
   if ($readRows -le 0 -or $readColumns -le 0) {
-    return @()
+    return @{
+      data = @()
+      rowCount = 0
+      columnCount = 0
+      actualRowCount = $actualRows
+      actualColumnCount = $actualColumns
+      truncated = $false
+    }
   }
 
+  # Fast path: Native COM GetWorksheet (sub-millisecond array read)
+  try {
+    $raw = $Origin.GetWorksheet($WorksheetRange)
+    if ($null -ne $raw -and $raw.Rank -eq 2) {
+      $l0 = $raw.GetLowerBound(0)
+      $u0 = $raw.GetUpperBound(0)
+      $l1 = $raw.GetLowerBound(1)
+      $u1 = $raw.GetUpperBound(1)
+      $totalRows = $u0 - $l0 + 1
+      $totalCols = $u1 - $l1 + 1
+
+      $startRow = $l0 + $RowOffset
+      $endRow = [Math]::Min($u0, $startRow + $readRows - 1)
+      $startCol = $l1 + $ColumnOffset
+      $endCol = [Math]::Min($u1, $startCol + $readColumns - 1)
+
+      if ($startRow -le $u0 -and $startCol -le $u1) {
+        $rows = @()
+        for ($r = $startRow; $r -le $endRow; $r++) {
+          $items = @()
+          for ($c = $startCol; $c -le $endCol; $c++) {
+            $val = $raw.GetValue($r, $c)
+            if ($null -eq $val -or $val -eq -1.23456789E-300) {
+              $items += $null
+            } elseif ($val -is [double] -and [double]::IsNaN($val)) {
+              $items += $null
+            } else {
+              $items += $val
+            }
+          }
+          $rows += ,$items
+        }
+
+        return @{
+          data = $rows
+          rowCount = $rows.Count
+          columnCount = if ($rows.Count -gt 0) { $rows[0].Count } else { 0 }
+          actualRowCount = [Math]::Max($actualRows, $totalRows)
+          actualColumnCount = [Math]::Max($actualColumns, $totalCols)
+          truncated = (($requestedRows -gt $readRows) -or ($requestedColumns -gt $readColumns))
+        }
+      }
+    }
+  } catch {}
+
+  # Fallback: cell-by-cell loop (only if GetWorksheet fails)
   $rows = @()
   for ($row = 0; $row -lt $readRows; $row++) {
     $items = @()
@@ -282,30 +349,49 @@ function Invoke-OriginMethod {
 
     "newProject" {
       $origin = Get-OriginApp
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
       $null = $origin.NewProject()
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
       return @{ ok = $true }
     }
 
     "loadProject" {
       $origin = Get-OriginApp
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
       $result = $origin.Load([string]$Params.absolutePath)
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
       return @{ ok = [bool]$result; relativePath = $Params.relativePath }
     }
 
     "saveProject" {
       $origin = Get-OriginApp
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
       $result = $origin.Save([string]$Params.absolutePath)
       return @{ ok = [bool]$result; relativePath = $Params.relativePath }
     }
 
     "execute" {
       $origin = Get-OriginApp
+      $cmd = "@N=1; @V=1; " + [string]$Params.script
       if ($Params.context) {
-        $result = $origin.Execute([string]$Params.script, [string]$Params.context)
+        $result = $origin.Execute($cmd, [string]$Params.context)
       } else {
-        $result = $origin.Execute([string]$Params.script)
+        $result = $origin.Execute($cmd)
       }
       return @{ result = $result }
+    }
+
+    "executeBatch" {
+      $origin = Get-OriginApp
+      $statements = @($Params.statements)
+      $combined = ($statements -join [System.Environment]::NewLine) + ";"
+      $cmd = "@N=1; @V=1; " + $combined
+      $result = $origin.Execute($cmd)
+      $results = @()
+      foreach ($stmt in $statements) {
+        $results += @{ statement = $stmt; result = $result }
+      }
+      return @{ ok = [bool]$result; results = $results; result = $result }
     }
 
     "run" {
@@ -400,18 +486,26 @@ function Invoke-OriginMethod {
       $origin = Get-OriginApp
       $range = [string]$Params.range
       $plotCode = [int]$Params.plotCode
-      $script = "plotxy " + $range + " plot:=" + $plotCode + ";"
+      $script = "@N=1; @V=1; plotxy " + $range + " plot:=" + $plotCode + ";"
       $result = $origin.Execute($script)
       return @{ script = $script; result = $result; plotType = $Params.plotType }
     }
 
     "exportGraph" {
       $origin = Get-OriginApp
+      $null = $origin.Execute("@N=1; @V=1; doc -s;")
+      $graphSelector = ""
       if ($Params.graphName) {
-        $null = $origin.Execute("win -a " + [string]$Params.graphName + ";")
+        $gName = [string]$Params.graphName
+        $null = $origin.Execute("win -a """ + $gName.Replace('"', '\"') + """;")
+        $graphSelector = " export:=specified pages:=""" + $gName.Replace('"', '\"') + """"
       }
-      $pathLiteral = [string]$Params.absolutePath
-      $script = "expGraph type:=" + [string]$Params.format + " path:=""" + $pathLiteral + """;"
+      $fullPath = [string]$Params.absolutePath
+      $dirPath = [System.IO.Path]::GetDirectoryName($fullPath)
+      $fileName = [System.IO.Path]::GetFileNameWithoutExtension($fullPath)
+      $dirLiteral = $dirPath.Replace('\', '\\').Replace('"', '\"')
+      $fileLiteral = $fileName.Replace('\', '\\').Replace('"', '\"')
+      $script = "@N=1; @V=1; expGraph type:=" + [string]$Params.format + " path:=""" + $dirLiteral + """ filename:=""" + $fileLiteral + """" + $graphSelector + " overwrite:=replace;"
       $result = $origin.Execute($script)
       return @{
         script = $script

@@ -1,4 +1,4 @@
-import { spawn, ChildProcessWithoutNullStreams } from "node:child_process";
+import { spawn, ChildProcessWithoutNullStreams, execSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +6,29 @@ import readline from "node:readline";
 import { once } from "node:events";
 import { originPowerShellBridgeScript } from "./powershellBridgeScript.js";
 import { OriginBridge } from "./types.js";
+
+let resolvedExecutable: string | undefined;
+
+function getPreferredPowerShell(): string {
+  if (resolvedExecutable) {
+    return resolvedExecutable;
+  }
+  if (process.env.ORIGIN_MCP_POWERSHELL_PATH) {
+    resolvedExecutable = process.env.ORIGIN_MCP_POWERSHELL_PATH;
+    return resolvedExecutable;
+  }
+  if (process.platform !== "win32") {
+    resolvedExecutable = "pwsh";
+    return resolvedExecutable;
+  }
+  try {
+    execSync("where.exe pwsh", { stdio: "ignore" });
+    resolvedExecutable = "pwsh";
+  } catch {
+    resolvedExecutable = "powershell.exe";
+  }
+  return resolvedExecutable;
+}
 
 interface PendingRequest {
   resolve(value: unknown): void;
@@ -34,10 +57,27 @@ export class PowerShellOriginBridge implements OriginBridge {
     const id = this.nextId++;
     const payload = JSON.stringify({ id, method, params });
 
+    const timeoutMs =
+      Number(process.env.ORIGIN_MCP_TIMEOUT_MS) > 0
+        ? Number(process.env.ORIGIN_MCP_TIMEOUT_MS)
+        : 30000;
     const response = new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        if (this.pending.has(id)) {
+          this.pending.delete(id);
+          reject(new Error(`Origin MCP request '${method}' timed out after ${timeoutMs}ms.`));
+        }
+      }, timeoutMs);
+
       this.pending.set(id, {
-        resolve: (value) => resolve(value as T),
-        reject
+        resolve: (value) => {
+          clearTimeout(timer);
+          resolve(value as T);
+        },
+        reject: (error) => {
+          clearTimeout(timer);
+          reject(error);
+        }
       });
     });
 
@@ -77,7 +117,7 @@ export class PowerShellOriginBridge implements OriginBridge {
       return this.process;
     }
 
-    const executable = process.platform === "win32" ? "powershell.exe" : "pwsh";
+    const executable = getPreferredPowerShell();
     this.scriptPath = path.join(
       os.tmpdir(),
       `originpro-mcp-bridge-${process.pid}-${Date.now()}.ps1`

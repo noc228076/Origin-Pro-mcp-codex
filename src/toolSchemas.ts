@@ -11,7 +11,11 @@ export const colorSchema = z
   .string()
   .trim()
   .regex(/^(#[0-9a-fA-F]{6}|\d+)$/, "Use #RRGGBB or an Origin color index.");
-export const relativePathSchema = z.string().trim().min(1);
+export const relativePathSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .describe("Workspace-relative or absolute file path.");
 export const worksheetCellSchema = z.union([z.string(), z.number(), z.boolean(), z.null()]);
 export const worksheetDataSchema = z.array(z.array(worksheetCellSchema));
 
@@ -87,6 +91,7 @@ export const toolInputSchemas = {
   }),
   origin_set_axis_style: z.object({
     graphName: z.string().trim().min(1).optional(),
+    layerIndex: z.number().int().min(1).optional(),
     axis: axisNameSchema,
     title: z.string().trim().min(1).optional(),
     from: z.number().optional(),

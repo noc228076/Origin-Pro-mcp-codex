@@ -33,4 +33,10 @@ describe("workspace paths", () => {
       expect(() => resolveWorkspacePath(input, root)).toThrow(WorkspacePathError);
     }
   );
+
+  it("supports absolute paths when allowAbsolute is true", () => {
+    const resolved = resolveWorkspacePath(windowsAbsolutePath, root, { allowAbsolute: true });
+    expect(resolved.absolutePath).toBe(path.resolve(windowsAbsolutePath));
+    expect(resolved.relativePath).toBe("x.opju");
+  });
 });

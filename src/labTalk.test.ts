@@ -4,6 +4,7 @@ import {
   buildCreateComboChartScript,
   buildExportGraphScript,
   buildPlotXYScript,
+  buildSetAxisStyleScript,
   buildSetPlotStyleScript,
   buildWorksheetXYRange
 } from "./labTalk.js";
@@ -40,6 +41,26 @@ describe("LabTalk builders", () => {
     expect(script).toContain("export:=specified");
     expect(script).toContain('pages:="Plot1"');
     expect(script).toContain("overwrite:=replace");
+  });
+
+  it("escapes backslashes in Windows file paths for expGraph scripts", () => {
+    const script = buildExportGraphScript("C:\\exports\\run1\\plot.png", "png", "Plot1");
+    expect(script).toContain('path:="C:\\\\exports\\\\run1"');
+    expect(script).toContain('filename:="plot"');
+  });
+
+  it("builds axis style scripts with optional layerIndex", () => {
+    const script = buildSetAxisStyleScript({
+      graphName: "Plot1",
+      layerIndex: 2,
+      axis: "y",
+      title: "Intensity (a.u.)",
+      fontSize: 20
+    });
+    expect(script).toContain("win -a Plot1;");
+    expect(script).toContain("page.active=2;");
+    expect(script).toContain('y.title$="Intensity (a.u.)";');
+    expect(script).toContain("y.title.font.size=20;");
   });
 
   it("builds safe plot style scripts for line and fill colors", () => {
@@ -81,5 +102,17 @@ describe("LabTalk builders", () => {
     expect(script).toContain("template:=doubleY");
     expect(script).toContain("set %(1) -pfb");
     expect(script).toContain("page.active=2;set %(1) -cl");
+  });
+
+  it("splits LabTalk statements while preserving semicolons inside quotes", async () => {
+    const { splitLabTalkScript } = await import("./originService.js");
+    const statements = splitLabTalkScript(
+      'win -a Graph1; x.title$="Voltage (V); Current (A)"; page.active=1;'
+    );
+    expect(statements).toEqual([
+      "win -a Graph1",
+      'x.title$="Voltage (V); Current (A)"',
+      "page.active=1"
+    ]);
   });
 });

@@ -18,7 +18,7 @@ function toolResult<T extends object>(structuredContent: T): ToolResult<T> {
 export function createOriginProMcpServer(service = new OriginService()): McpServer {
   const server = new McpServer({
     name: "originpro-mcp",
-    version: "0.1.0"
+    version: "0.2.0"
   });
 
   server.registerTool(
@@ -65,7 +65,7 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
     "origin_load_project",
     {
       title: "Load OriginPro Project",
-      description: "Load an OriginPro project from a workspace-relative path.",
+      description: "Load an OriginPro project from a workspace-relative or absolute path.",
       inputSchema: toolInputSchemas.origin_load_project
     },
     async ({ relativePath }) => toolResult(await service.loadProject(relativePath))
@@ -75,7 +75,7 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
     "origin_save_project",
     {
       title: "Save OriginPro Project",
-      description: "Save the active OriginPro project to a workspace-relative path.",
+      description: "Save the active OriginPro project to a workspace-relative or absolute path.",
       inputSchema: toolInputSchemas.origin_save_project
     },
     async ({ relativePath }) => toolResult(await service.saveProject(relativePath))
@@ -205,7 +205,8 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
     "origin_export_graph",
     {
       title: "Export OriginPro Graph",
-      description: "Export the active or named OriginPro graph to a workspace-relative path.",
+      description:
+        "Export the active or named OriginPro graph to a workspace-relative or absolute path.",
       inputSchema: toolInputSchemas.origin_export_graph
     },
     async ({ relativePath, format, graphName }) =>
@@ -277,10 +278,11 @@ export function createOriginProMcpServer(service = new OriginService()): McpServ
       description: "Set common X, Y, or Y2 axis title, range, tick, and title font options.",
       inputSchema: toolInputSchemas.origin_set_axis_style
     },
-    async ({ graphName, axis, title, from, to, majorTicks, minorTicks, fontSize }) =>
+    async ({ graphName, layerIndex, axis, title, from, to, majorTicks, minorTicks, fontSize }) =>
       toolResult(
         await service.setAxisStyle({
           graphName,
+          layerIndex,
           axis,
           title,
           from,

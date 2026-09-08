@@ -69,7 +69,7 @@ export function buildExportGraphScript(
     ? ` export:=specified pages:="${escapeLabTalkString(graphName)}"`
     : "";
 
-  return `expGraph type:=${format} path:="${escapeLabTalkString(directory)}" filename:="${escapeLabTalkString(
+  return `expGraph type:=${format} path:="${escapeLabTalkPath(directory)}" filename:="${escapeLabTalkPath(
     basename
   )}"${graphSelector} overwrite:=replace;`;
 }
@@ -86,6 +86,7 @@ export interface PlotStyleOptions {
 
 export interface AxisStyleOptions {
   readonly graphName?: string;
+  readonly layerIndex?: number;
   readonly axis: AxisName;
   readonly title?: string;
   readonly from?: number;
@@ -146,6 +147,10 @@ export function buildSetPlotStyleScript(options: PlotStyleOptions): string {
 export function buildSetAxisStyleScript(options: AxisStyleOptions): string {
   const script: string[] = [];
   appendActivateGraph(script, options.graphName);
+
+  if (options.layerIndex !== undefined) {
+    script.push(`page.active=${positiveInteger(options.layerIndex, "layerIndex")};`);
+  }
 
   const axisPrefix = axisLabTalkPrefix(options.axis);
   if (options.title) {
@@ -255,6 +260,10 @@ function buildNewGraphTarget(graphName?: string, templateName?: string): string 
 
 function escapeLabTalkString(value: string): string {
   return value.replace(/"/g, '\\"');
+}
+
+function escapeLabTalkPath(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 function appendActivateGraph(script: string[], graphName?: string) {

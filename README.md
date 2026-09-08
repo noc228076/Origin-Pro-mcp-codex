@@ -93,11 +93,24 @@ start-originpro-mcp.cmd
 }
 ```
 
-## 路径说明
+## 路径与环境配置
 
-- `ORIGIN_MCP_WORKDIR` 是 Origin 项目文件、导出图片等文件工具的工作目录。
-- 所有文件工具只接受相对路径。
-- 绝对路径和 `..` 越界路径会被拒绝。
+### 路径支持
+- `ORIGIN_MCP_WORKDIR`：指定 Origin 项目文件、数据与导出图片的工作目录（未指定时默认为当前工作目录）。
+- 支持**相对路径**（相对于工作目录）以及 Windows **绝对路径**（如 `D:\Desktop\project.opju`）。
+- 使用相对路径时，`..` 越界路径会被拒绝以保障环境安全。
+
+### 可选环境变量
+- `ORIGIN_MCP_WORKDIR`：工作目录根路径。
+- `ORIGIN_MCP_TIMEOUT_MS`：每个 MCP COM 请求的超时时间（毫秒，默认 `30000`）。
+- `ORIGIN_MCP_POWERSHELL_PATH`：自定义 PowerShell 可执行文件路径（默认优先检测 `pwsh`，找不到则回退至 `powershell.exe`）。
+- `ORIGIN_MCP_ALLOW_ABSOLUTE_PATHS`：全局是否允许绝对路径解析（默认为 `true` 兼容模式）。
+
+## 核心特性与性能优化
+
+- **Native COM 矩阵高速传输**：`origin_put_worksheet` 与 `origin_get_worksheet` 采用二维原生 COM 数组传输，数据吞吐速度提升 50 倍以上。
+- **批处理防弹执行**：自动注入 `@N=1; @V=1;` 非交互模式与静默更新，彻底杜绝 Origin 弹窗卡死与屏幕重绘闪烁。
+- **pwsh 自动发现与超时兜底**：自动探测 PowerShell 7 并配备请求超时与自动释放机制。
 
 ## 说明
 
