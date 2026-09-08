@@ -2,153 +2,180 @@
 
 [中文](README.md) | English
 
-OriginPro MCP server for Codex. It uses stdio transport to automate OriginLab OriginPro.
+An OriginPro MCP server for AI coding assistants (Antigravity, Codex, Claude Desktop, Cursor, etc.). It automates OriginLab OriginPro via its Windows COM Automation interface, enabling high-speed tabular data import, publication-grade scientific chart creation, multi-layer formatting, and lossless image/project export.
+
+## 🌟 Key Features & Performance Highlights
+
+- **Native COM SafeArray Fast-Path**: `origin_put_worksheet` and `origin_get_worksheet` leverage 2D COM SafeArray transfers, achieving over 50x higher throughput (injecting tens of thousands of data points in seconds).
+- **Non-Interactive Batch Mode**: Automatically injects `@N=1; @V=1; doc -s;` to suppress modal prompts, dialog popups, and UI screen redraws during execution.
+- **Full Path Support**: Supports both Windows absolute paths (e.g. `D:\Desktop\project.opju`) and workspace-relative paths, including cross-drive access.
+- **Path Escaping Safety**: Built-in LabTalk path backslash escaping prevents Windows paths from failing due to `\t` (tab) or `\n` (newline) interpretation.
+- **PowerShell 7 Auto-Detection**: Prioritizes PowerShell 7 (`pwsh`), gracefully falls back to system `powershell.exe`, and features built-in execution timeout guards.
+- **One-Click Journal Themes & Combo Charts**: Includes presets for `nature`, `science`, `cell`, and `journal` color palettes and dual-Y column+line plot generators.
 
 ## Prerequisites
 
-- Windows.
-- OriginLab OriginPro installed and registered as a COM Automation Server.
-- Node.js 20 or later.
-- Codex installed and able to configure MCP servers.
+- **OS**: Windows (Origin COM Automation is Windows-only).
+- **OriginLab OriginPro**: Installed and activated (Origin 2021 or newer recommended).
+- **Node.js**: Node.js 20 or higher.
 
-## Deployment
+## 📦 Installation & Deployment
 
-Install the server from GitHub as a global command:
+### Option 1: Install Globally from GitHub (Recommended)
 
 ```powershell
-npm install -g github:noc228076/origin-pro-mcp-codex#codex/publish-originpro-mcp
+npm install -g github:noc228076/Origin-Pro-mcp-codex
 ```
 
-Verify that the command is available:
+Verify that the command is available in any terminal:
 
 ```powershell
 originpro-mcp
 ```
 
-If you are developing from source:
+### Option 2: Build from Source
 
 ```powershell
+git clone https://github.com/noc228076/Origin-Pro-mcp-codex.git
+cd Origin-Pro-mcp-codex
 npm install
 npm run build
 npm link
 ```
 
-`npm link` registers the current source package as the global `originpro-mcp` command so Codex can start it directly.
+## ⚙️ Client Configuration
 
-## Startup
+### 1. Antigravity / Gemini (`mcp_config.json`)
 
-For normal use, you do not need to start the service manually. Codex starts `originpro-mcp` from the MCP configuration.
+Add to `mcpServers` in `C:\Users\<YourUser>\.gemini\config\mcp_config.json`:
 
-To verify that the service can start manually, run:
-
-```powershell
-originpro-mcp
+```json
+{
+  "mcpServers": {
+    "originpro": {
+      "command": "node",
+      "args": [
+        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+      ],
+      "env": {
+        "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
+      }
+    }
+  }
+}
 ```
 
-For source debugging, you can also run:
-
-```powershell
-npm start
-```
-
-On Windows, you can also double-click:
-
-```text
-start-originpro-mcp.cmd
-```
-
-## Codex Configuration
-
-Use the JSON below in Codex MCP configuration. This example assumes the repository is located at `D:\Documents\origin-pro-mcp-codex`; replace that path with your actual repository directory if needed.
+### 2. Codex (`codex.json` / MCP Settings)
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
+    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
   }
 }
 ```
 
-Restart Codex after changing the configuration.
+### 3. Claude Desktop (`claude_desktop_config.json`)
 
-## CCSwitch Configuration
+Configure in `%APPDATA%\Claude\claude_desktop_config.json`:
 
-If you run the server directly from this source directory, use the JSON below in CCSwitch. This example assumes the repository is located at `D:\Documents\origin-pro-mcp-codex`; replace that path with your actual repository directory if needed.
+```json
+{
+  "mcpServers": {
+    "originpro": {
+      "command": "node",
+      "args": [
+        "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
+      ]
+    }
+  }
+}
+```
+
+### 4. CCSwitch Configuration
 
 ```json
 {
   "type": "stdio",
   "command": "node",
   "args": [
-    "D:\\Documents\\origin-pro-mcp-codex\\dist\\index.js"
+    "D:\\APPS\\AIMCP\\origin-pro-mcp-codex\\dist\\index.js"
   ],
   "env": {
-    "ORIGIN_MCP_WORKDIR": "D:\\Documents\\origin-pro-mcp-codex"
+    "ORIGIN_MCP_WORKDIR": "D:\\APPS\\AIMCP\\origin-pro-mcp-codex"
   }
 }
 ```
 
-## Path & Environment Configuration
+## 🛠️ MCP Tools Overview (23 Tools)
 
-### Path Support
-- `ORIGIN_MCP_WORKDIR`: Specifies the workspace root for Origin project files, data worksheets, and exported figures (defaults to current working directory).
-- Supports both **relative paths** (relative to the workspace directory) and Windows **absolute paths** (e.g. `D:\Desktop\project.opju`).
-- When relative paths are used, `..` path traversal is rejected for workspace isolation.
+### 1. Session & Lifecycle
+| Tool | Description |
+| :--- | :--- |
+| `origin_status` | Check COM connection status and current window visibility mode |
+| `origin_connect` | Attach to an existing Origin instance or launch a new one |
+| `origin_set_visible` | Set Origin window state (`show`, `hide`, `front`, `maximize`, `minimize`) |
+| `origin_run` | Let Origin process queued automation tasks |
+| `origin_exit` | Safely disconnect COM session and terminate background PowerShell bridge |
 
-### Optional Environment Variables
-- `ORIGIN_MCP_WORKDIR`: Workspace root path.
-- `ORIGIN_MCP_TIMEOUT_MS`: Timeout for each Origin COM request in milliseconds (default: `30000`).
-- `ORIGIN_MCP_POWERSHELL_PATH`: Custom path to PowerShell executable (defaults to auto-detecting `pwsh`, falling back to `powershell.exe`).
-- `ORIGIN_MCP_ALLOW_ABSOLUTE_PATHS`: Enable/disable absolute path resolution (default: `true`).
+### 2. Project File Management
+| Tool | Parameters | Description |
+| :--- | :--- | :--- |
+| `origin_new_project` | None | Create a clean Origin project in active session |
+| `origin_load_project` | `relativePath` | Open an existing `.opju` file (accepts relative or absolute path, e.g. `D:\Desktop\demo.opju`) |
+| `origin_save_project` | `relativePath` | Save project to destination path (auto-creates directories) |
 
-## Key Features & Optimizations
+### 3. Worksheets & Data Transfer
+| Tool | Key Parameters | Description |
+| :--- | :--- | :--- |
+| `origin_create_page` | `pageType`, `name`, `template` | Create window (`worksheet`, `graph`, `matrix`, `layout`, `notes`) |
+| `origin_put_worksheet` | `worksheetRange`, `data`, `rowOffset`, `columnOffset` | Fast bulk write 2D array into worksheet via native COM array channel |
+| `origin_get_worksheet` | `worksheetRange`, `rowOffset`, `columnOffset`, `rowCount`, `columnCount` | Fast bulk read worksheet range |
 
-- **Native COM Array Fast-Path**: `origin_put_worksheet` and `origin_get_worksheet` use 2D COM SafeArray transfers, achieving over 50x faster data exchange.
-- **Non-Interactive Batch Mode**: Injects `@N=1; @V=1;` to suppress modal dialogs and UI flicker during automation.
-- **PowerShell 7 Auto-Detection & Guard**: Automatically discovers `pwsh` with configurable timeout safeguards.
+### 4. Plotting & Scientific Styling
+| Tool | Key Parameters | Description |
+| :--- | :--- | :--- |
+| `origin_plot_xy` | `worksheetRange`, `xColumn`, `yColumns`, `plotType` | Create standard XY plots (`line`, `scatter`, `line_symbol`, `column`) |
+| `origin_create_combo_chart` | `xColumn`, `columnYColumn`, `lineYColumn`, `columnColor`, `lineColor` | Generate column + line double-Y combo chart |
+| `origin_create_publication_figure` | `data`, `theme`, `titles`, `exportPath`, `exportFormat` | End-to-end: data insertion, dual-Y plot, journal styling, and high-res export |
+| `origin_set_plot_style` | `graphName`, `layerIndex`, `plotIndex`, `color`, `lineWidth`, `fillColor` | Fine-tune plot color, line width, symbol size, fill color |
+| `origin_set_axis_style` | `graphName`, `layerIndex`, `axis`, `title`, `from`, `to`, `majorTicks`, `fontSize` | Customize X / Y / Y2 axis range, tick spacing, font size, and labels |
+| `origin_apply_graph_theme` | `graphName`, `theme` | Apply journal color schemes (`nature`, `science`, `cell`, `journal`) |
+| `origin_export_graph` | `relativePath`, `format`, `graphName` | High-res export (`png`, `pdf`, `tif`, `jpg`, `eps`, `emf`, supports absolute paths) |
 
-## Notes
+### 5. Low-Level LabTalk Access
+| Tool | Description |
+| :--- | :--- |
+| `origin_execute_labtalk` | Execute custom LabTalk commands with automated non-interactive guards |
+| `origin_get_ltvar` / `origin_set_ltvar` | Read / write numeric LabTalk variables |
+| `origin_get_ltstr` / `origin_set_ltstr` | Read / write string LabTalk variables |
 
-- This MCP is for OriginLab OriginPro.
-- It uses stdio transport.
-- Codex manages the MCP server process automatically.
+## 🧭 Recommended Workflow
 
-## MCP Tools
+For scientific publication plots, prefer composite high-level tools over raw LabTalk:
 
-- `origin_status`
-- `origin_connect`
-- `origin_set_visible`
-- `origin_new_project`
-- `origin_load_project`
-- `origin_save_project`
-- `origin_run`
-- `origin_exit`
-- `origin_create_page`
-- `origin_put_worksheet`
-- `origin_get_worksheet`
-- `origin_execute_labtalk`
-- `origin_get_ltvar`
-- `origin_set_ltvar`
-- `origin_get_ltstr`
-- `origin_set_ltstr`
-- `origin_plot_xy`
-- `origin_set_plot_style`
-- `origin_set_axis_style`
-- `origin_apply_graph_theme`
-- `origin_create_combo_chart`
-- `origin_create_publication_figure`
-- `origin_export_graph`
+```mermaid
+graph LR
+    A[origin_connect] --> B[origin_create_publication_figure]
+    B --> C[origin_set_axis_style / origin_set_plot_style]
+    C --> D[origin_export_graph]
+    D --> E[origin_save_project]
+```
 
-## Recommended Flow
+## 🔧 Environment Variables
 
-1. `origin_connect`
-2. `origin_create_publication_figure`
-3. `origin_export_graph`
-4. `origin_save_project`
+| Variable | Default | Purpose |
+| :--- | :--- | :--- |
+| `ORIGIN_MCP_WORKDIR` | Current directory | Workspace root for relative paths |
+| `ORIGIN_MCP_TIMEOUT_MS` | `30000` | COM request timeout guard in milliseconds |
+| `ORIGIN_MCP_POWERSHELL_PATH` | Auto-detected | Custom path to PowerShell executable |
+| `ORIGIN_MCP_ALLOW_ABSOLUTE_PATHS` | `true` | Whether to allow cross-drive Windows absolute paths |
 
-Prefer these higher-level tools over raw LabTalk unless a case is not covered yet.
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE). Contributions, issues, and feature requests are welcome!
